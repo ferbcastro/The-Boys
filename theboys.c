@@ -1,7 +1,5 @@
 #include <stdio.h>
-#include <conjunto.h>
-#include <fila.h>
-#include <lef.h>
+/* demais includes */
 
 /* funcoes que voce ache necessarias aqui */
 
