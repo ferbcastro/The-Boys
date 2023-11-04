@@ -111,5 +111,5 @@ void fila_imprime (struct fila *fila)
         printf ("%2d ", ptrAux->chave);
         ptrAux = ptrAux->prox;
     }
-    printf ("]");
+    printf ("]\n");
 }

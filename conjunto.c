@@ -289,7 +289,7 @@ struct conjunto *uniao_cjt (struct conjunto *c1, struct conjunto *c2)
     i = j = k = 0;
     while (i < c1->card && j < c2->card)
     {
-        /* se os elementos forem iguais, em deles esta em cjtU */
+        /* se os elementos forem iguais, um deles esta em cjtU */
         if (c1->v[i] == c2->v[j])
         {
             cjtU->v[k] = c1->v[i];
@@ -382,13 +382,14 @@ void imprime_cjt (struct conjunto *c)
     /* c esta vazio se nao foi criado ou tem cardinalidade 0 */
     if (!c || !c->card)
     {   
-        printf ("conjunto vazio\n"); 
+        printf ("[ ]\n"); 
         return;
     }
     /* ja que os elementos foram inseridos em ordem, c esta ordenado */
-    for (j = 0; j < c->card - 1; j++)
+    printf ("[ ");
+    for (j = 0; j < c->card; j++)
         printf ("%d ", c->v[j]);
-    printf ("%d\n", c->v[j]);
+    printf ("]\n");
 
     return;
 }
