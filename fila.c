@@ -101,14 +101,13 @@ int fila_vazia (struct fila *fila)
 
 void fila_imprime (struct fila *fila)
 {
-    int i;
     struct nodo *ptrAux;
 
     printf ("[ ");
     ptrAux = fila->ini;
     while (ptrAux)
     {
-        printf ("%2d ", ptrAux->chave);
+        printf ("%d ", ptrAux->chave);
         ptrAux = ptrAux->prox;
     }
     printf ("]\n");

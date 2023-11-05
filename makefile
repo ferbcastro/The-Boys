@@ -1,6 +1,4 @@
-# Makefile de exemplo (Manual do GNU Make)
-     
-CFLAGS = -Wall -g  # flags de compilacao
+CFLAGS = -Wall -Wextra -g  # flags de compilacao
 LDFLAGS = -lm
 
 CC = gcc
@@ -44,6 +42,6 @@ theboys.o: theboys.c
 	$(CC) -c $(CFLAGS) theboys.c
 
 clean:
-	rm -f $(objects) theboys
+	rm -f $(objects) theboys 
 
 
