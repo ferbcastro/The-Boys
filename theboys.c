@@ -8,6 +8,7 @@
 #define N_HABILIDADES 10
 #define T_FIM_DO_MUNDO 525600
 #define N_TAMANHO_MUNDO 20000
+#define MAIOR_DIST 29000
 
 /*
 * 1: CHEGA
@@ -85,26 +86,14 @@ int achaMenorPosVet (int vet[], int tam)
     return menorPos;
 }
 
-int achaMaiorElemento (int vet[], int tam)
-{
-    int i, maior;
-
-    maior = vet[0];
-    for (i = 1; i < tam; i++)
-        if (vet[i] > maior)
-            maior = vet[i];
-
-    return maior;        
-}
-
-int ajustaLocalBase (struct mundo *s, int num)
+int ajustaY (struct mundo *s, struct base *b, int num)
 {
     int i = 0, verifica = 1;
 
-    s->bases[num].local.y = aleat (0, N_TAMANHO_MUNDO - 1);
+    b->local.y = aleat (0, N_TAMANHO_MUNDO - 1);
     while (verifica && i < num)
     {
-        verifica = (s->bases[i].local.y != s->bases[num].local.y);
+        verifica = (s->bases[i].local.y != b->local.y);
         i++;
     }
 
@@ -134,7 +123,7 @@ struct base criaBase (int id, struct mundo *s)
     b.filaEspera = fila_cria ();
     b.presentes = cria_cjt (b.lotacaoMax);
     b.local.x = aleat (0, N_TAMANHO_MUNDO - 1);
-    while (!ajustaLocalBase (s, id));
+    while (!ajustaY (s, &b, id));
 
     return b;
 }   
@@ -163,14 +152,13 @@ void inicializaMundo (struct mundo *simulacao, struct lef_t *eventos)
     simulacao->tamanhoMundo.x = simulacao->tamanhoMundo.y = N_TAMANHO_MUNDO;
     simulacao->nMissoesResolvidas = simulacao->relogio = 0;
 
+    for (i = 0; i < simulacao->nBases; i++)
+        simulacao->bases[i] = criaBase (i, simulacao);
     for (i = 0; i < simulacao->nHerois; i++)
     {
         simulacao->herois[i] = criaHeroi (i);
         insere_lef (eventos, cria_evento (aleat (0, 4320), 1, i, aleat (0, simulacao->nBases - 1)));
-        if (i < simulacao->nBases)
-            simulacao->bases[i] = criaBase (i, simulacao);
     }
-
     for (i = 0; i < simulacao->nMissoes; i++)
     {
         simulacao->missoes[i] = criaMissao (i);
@@ -180,75 +168,70 @@ void inicializaMundo (struct mundo *simulacao, struct lef_t *eventos)
     insere_lef (eventos, cria_evento (T_FIM_DO_MUNDO, 9, 0, 0));
 }
 
-void heroiChega (struct mundo *simulacao, struct evento_t *eventoTemp, struct lef_t *e)
+void heroiChega (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e)
 {
-    unsigned short int espera;
     int h = eventoTemp->dado1;
     int b = eventoTemp->dado2;
-    int presentes = cardinalidade_cjt (simulacao->bases[b].presentes);
-    int lMax = simulacao->bases[b].lotacaoMax;
-    int pcs = simulacao->herois[h].paciencia;
+    int c = cardinalidade_cjt (s->bases[b].presentes);
+    int p = s->herois[h].paciencia;
+    int lMax = s->bases[b].lotacaoMax;
+    struct fila *f = s->bases[b].filaEspera;
 
-    simulacao->herois[h].base = b;
+    s->herois[h].base = b;
 
-    if (presentes < lMax && fila_vazia (simulacao->bases[b].filaEspera))
-        espera = 1;
-    else
-        espera = pcs > 10*(fila_tamanho (simulacao->bases[b].filaEspera));
-
-    printf ("%6d: CHEGA  HEROI %2d BASE %d (%2d/%2d) ", simulacao->relogio, h, b, presentes, lMax);
-    if (espera)
+    printf ("%6d: CHEGA  HEROI %2d BASE %d (%2d/%2d) ", s->relogio, h, b, p, lMax);
+    if ((c < lMax && fila_vazia (f)) || p > 10 * fila_tamanho (f))
     {
         printf ("ESPERA\n");
-        insere_lef (e, cria_evento (simulacao->relogio, 3, h, b)); 
+        insere_lef (e, cria_evento (s->relogio, 3, h, b));
     }
     else
-    { 
+    {
         printf ("DESISTE\n");
-        insere_lef (e, cria_evento (simulacao->relogio, 4, h, 0)); 
-    }    
+        insere_lef (e, cria_evento (s->relogio, 4, h, 0)); 
+    }   
 }
 
-void heroiEspera (struct mundo *simulacao, struct evento_t *eventoTemp, struct lef_t *e)
+void heroiEspera (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e)
 {
-    int t = simulacao->relogio;
+    int t = s->relogio;
     int h = eventoTemp->dado1;
     int b = eventoTemp->dado2;
+    struct fila *f = s->bases[b].filaEspera;
 
-    printf ("%6d: ESPERA HEROI %2d BASE %d (%2d)\n", t, h, b, fila_tamanho(simulacao->bases[b].filaEspera));
-    enqueue (simulacao->bases[b].filaEspera, h);
+    printf ("%6d: ESPERA HEROI %2d BASE %d (%2d)\n", t, h, b, fila_tamanho(f));
+    enqueue (s->bases[b].filaEspera, h);
     insere_lef (e, cria_evento (t, 5, 0, b));
 }
 
-void heroiDesiste (struct mundo *simulacao, struct evento_t *eventoTemp, struct lef_t *e)
+void heroiDesiste (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e)
 {
-    int t = simulacao->relogio;
+    int t = s->relogio;
     int h = eventoTemp->dado1;
     int b = eventoTemp->dado2;
 
     printf ("%6d: DESISTE HEROI %2d BASE %d\n", t, h, b);
-    insere_lef (e, cria_evento (t, 8, h, aleat (0, simulacao->nBases)));
+    insere_lef (e, cria_evento (t, 8, h, aleat (0, s->nBases - 1)));
 }
 
-void avisaPorteiro (struct mundo *simulacao, struct evento_t *eventoTemp, struct lef_t *e)
+void avisaPorteiro (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e)
 {
-    int t = simulacao->relogio;
-    int b = eventoTemp->dado2;
-    int presentes = cardinalidade_cjt (simulacao->bases[b].presentes);
-    int ltcMax = simulacao->bases[b].lotacaoMax;
     int h;
-
-    printf ("%6d: AVISA  PORTEIRO BASE %d (%2d/%2d) FILA", t, b, presentes, ltcMax);
-    fila_imprime (simulacao->bases[b].filaEspera);
-    while (presentes < ltcMax && !fila_vazia (simulacao->bases[b].filaEspera))
+    int t = s->relogio;
+    int bId = eventoTemp->dado2;
+    struct base b = s->bases[bId];
+    int p = cardinalidade_cjt (b.presentes);
+    int lMax = b.lotacaoMax;
+    
+    printf ("%6d: AVISA  PORTEIRO BASE %d (%2d/%2d) FILA ", t, bId, p, lMax);
+    fila_imprime (b.filaEspera);
+    while (p < lMax && dequeue (b.filaEspera, &h))
     {
-        dequeue (simulacao->bases[b].filaEspera, &h);
-        insere_cjt (simulacao->bases[b].presentes, h);
-        insere_lef (e, cria_evento (t, 6, h, b));
-        printf ("%6d: AVISA  PORTEIRO BASE %d ADMITE %2d", t, b, h);
-        presentes++;
+        insere_cjt (b.presentes, h);
+        insere_lef (e, cria_evento (t, 6, h, bId));
+        printf ("%6d: AVISA  PORTEIRO BASE %d ADMITE %2d\n", t, bId, h);
+        p++;
     } 
-    printf ("]\n"); 
 }
 
 void heroiEntra (struct mundo *simulacao, struct evento_t *eventoTemp, struct lef_t *e)
@@ -256,14 +239,13 @@ void heroiEntra (struct mundo *simulacao, struct evento_t *eventoTemp, struct le
     int t = simulacao->relogio;
     int h = eventoTemp->dado1;
     int b = eventoTemp->dado2;
-    int ltcMax = simulacao->bases[b].lotacaoMax;
-    int pcs = simulacao->herois[h].paciencia;
-    int presentes = cardinalidade_cjt (simulacao->bases[b].presentes);
+    int lMax = simulacao->bases[b].lotacaoMax;
+    int p = cardinalidade_cjt (simulacao->bases[b].presentes);
     int temp;
 
-    temp = 15 + pcs * aleat (1, 20);
-    insere_lef (e, cria_evento (t + temp, 7, h, b));
-    printf ("%6d: ENTRA  HEROI %2d BASE %d (%2d/%2d) SAI %d\n", t, h, b, presentes, ltcMax, t + temp);
+    temp = t + 15 + simulacao->herois[h].paciencia * aleat (1, 20);
+    insere_lef (e, cria_evento (temp, 7, h, b));
+    printf ("%6d: ENTRA  HEROI %2d BASE %d (%2d/%2d) SAI %d\n", t, h, b, p, lMax, temp);
 }
 
 void heroiSai (struct mundo *simulacao, struct evento_t *eventoTemp, struct lef_t *e)
@@ -294,9 +276,9 @@ void heroiViaja (struct mundo *simulacao, struct evento_t *eventoTemp, struct le
 
     vel = simulacao->herois[h].velocidade;
     dist = (int)sqrt ((bDest.x - bAtual.x) * (bDest.x - bAtual.x) + (bDest.y - bAtual.y) * (bDest.y - bAtual.y));
-    temp = dist / vel;
+    temp = simulacao->relogio + dist / vel;
 
-    insere_lef (e, cria_evento (simulacao->relogio + temp, 1, h, baseDestino));
+    insere_lef (e, cria_evento (temp, 1, h, baseDestino));
     printf ("%6d: VIAJA  HEROI %2d BASE %d BASE %d ", simulacao->relogio, h, baseAtual, baseDestino);
     printf ("DIST %d VEL %d CHEGA %d\n", dist, vel, simulacao->relogio + temp);
 }
@@ -304,38 +286,39 @@ void heroiViaja (struct mundo *simulacao, struct evento_t *eventoTemp, struct le
 void missao (struct mundo *simulacao, struct evento_t *eventoTemp, struct lef_t *e)
 {
     int t = simulacao->relogio;
-    int distancias [simulacao->nBases], temp [simulacao->nHerois];
-    struct coordenadas m = simulacao->missoes[eventoTemp->dado1].local;
-    int i, j, menorPos, num, XTemp, YTemp, dist, maiorDist, achou; 
-    struct conjunto *habilidadesBase = cria_cjt (simulacao->nHabilidades);
+    int mId = eventoTemp->dado1;
+    int dists[simulacao->nBases], h[simulacao->nHerois];
+    struct coordenadas m = simulacao->missoes[mId].local;
+    int i, j, menorPos, hId, XTemp, YTemp, achou; 
+    struct conjunto *temp, *habilidadesBase = cria_cjt (N_HABILIDADES);
 
     printf ("%6d: MISSAO %d HAB REQ: ", t, eventoTemp->dado1);
-    imprime_cjt (simulacao->missoes[eventoTemp->dado1].habilidades);
+    imprime_cjt (simulacao->missoes[mId].habilidades);
 
     for (i = 0; i < simulacao->nBases; i++)
     {
         XTemp = simulacao->bases[i].local.x;
         YTemp = simulacao->bases[i].local.y;
-        dist = (int)sqrt ((m.x - XTemp) * (m.x - XTemp) + (m.y - YTemp) * (m.y - YTemp));
-        distancias[i] = dist;
+        dists[i] = (int)sqrt ((m.x - XTemp) * (m.x - XTemp) + (m.y - YTemp) * (m.y - YTemp));
     }
 
-    achou = j = 0;
-    maiorDist = achaMaiorElemento (distancias, simulacao->nBases);
+    achou = j = i = 0;
     while (!achou && j < simulacao->nBases)
     {
-        menorPos = achaMenorPosVet (distancias, simulacao->nBases);
-        distancias[menorPos] = maiorDist;
+        menorPos = achaMenorPosVet (dists, simulacao->nBases);
+        dists[menorPos] = MAIOR_DIST;
         inicia_iterador_cjt (simulacao->bases[menorPos].presentes);
-        for (i = 0; i < cardinalidade_cjt(simulacao->bases[menorPos].presentes); i++)
+        while (incrementa_iterador_cjt (simulacao->bases[menorPos].presentes, &hId))
         {
-            incrementa_iterador_cjt (simulacao->bases[menorPos].presentes, &num);
-            uniao_cjt (habilidadesBase, simulacao->herois[num].habilidades);
-            temp[i] = num;
+            temp = habilidadesBase;
+            habilidadesBase = uniao_cjt (habilidadesBase, simulacao->herois[hId].habilidades);
+            destroi_cjt (temp);
+            h[i] = hId;
+            i++;
         }
         printf ("%6d: MISSAO %d HAB BASE %d:", t, eventoTemp->dado1, menorPos);
         imprime_cjt (habilidadesBase);
-        achou = contido_cjt (simulacao->missoes[eventoTemp->dado1].habilidades, habilidadesBase);
+        achou = contido_cjt (simulacao->missoes[mId].habilidades, habilidadesBase);
         
         j++;
     }
@@ -346,7 +329,7 @@ void missao (struct mundo *simulacao, struct evento_t *eventoTemp, struct lef_t 
         imprime_cjt (simulacao->bases[menorPos].presentes);
         ++simulacao->nMissoesResolvidas;
         for (i = 0; i < cardinalidade_cjt(simulacao->bases[menorPos].presentes); i++)
-            ++simulacao->herois[temp[i]].experiencia;
+            ++simulacao->herois[h[i]].experiencia;
     }
     else
     {

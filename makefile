@@ -42,6 +42,6 @@ theboys.o: theboys.c
 	$(CC) -c $(CFLAGS) theboys.c
 
 clean:
-	rm -f $(objects) theboys 
+	rm -f $(objects) theboys testa_conjunto testa_fila testa_lef
 
 
