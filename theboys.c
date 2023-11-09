@@ -109,7 +109,7 @@ struct heroi criaHeroi (int id)
     h.velocidade = aleat (50, 5000);
     h.paciencia = aleat (0, 100);
     h.habilidades = cria_cjt (aleat (1, 3));
-    while (insere_cjt (h.habilidades, aleat (1, N_HABILIDADES)));
+    while (insere_cjt (h.habilidades, aleat (0, N_HABILIDADES - 1)));
     
     return h;
 }
@@ -136,7 +136,7 @@ struct missao criaMissao (int id)
     m.local.x = aleat (0, N_TAMANHO_MUNDO - 1);
     m.local.y = aleat (0, N_TAMANHO_MUNDO - 1);
     m.habilidades = cria_cjt (aleat (6, 10));
-    while (insere_cjt (m.habilidades, aleat (1, N_HABILIDADES)));
+    while (insere_cjt (m.habilidades, aleat (0, N_HABILIDADES - 1)));
 
     return m;  
 }
@@ -220,17 +220,17 @@ void avisaPorteiro (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *
     int t = s->relogio;
     int bId = eventoTemp->dado2;
     struct base b = s->bases[bId];
-    int p = cardinalidade_cjt (b.presentes);
+    int c = cardinalidade_cjt (b.presentes);
     int lMax = b.lotacaoMax;
     
-    printf ("%6d: AVISA  PORTEIRO BASE %d (%2d/%2d) FILA ", t, bId, p, lMax);
+    printf ("%6d: AVISA  PORTEIRO BASE %d (%2d/%2d) FILA ", t, bId, c, lMax);
     fila_imprime (b.filaEspera);
-    while (p < lMax && dequeue (b.filaEspera, &h))
+    while (c < lMax && dequeue (b.filaEspera, &h))
     {
         insere_cjt (b.presentes, h);
         insere_lef (e, cria_evento (t, 6, h, bId));
         printf ("%6d: AVISA  PORTEIRO BASE %d ADMITE %2d\n", t, bId, h);
-        p++;
+        c++;
     } 
 }
 
@@ -240,12 +240,12 @@ void heroiEntra (struct mundo *simulacao, struct evento_t *eventoTemp, struct le
     int h = eventoTemp->dado1;
     int b = eventoTemp->dado2;
     int lMax = simulacao->bases[b].lotacaoMax;
-    int p = cardinalidade_cjt (simulacao->bases[b].presentes);
+    int c = cardinalidade_cjt (simulacao->bases[b].presentes);
     int temp;
 
     temp = t + 15 + simulacao->herois[h].paciencia * aleat (1, 20);
     insere_lef (e, cria_evento (temp, 7, h, b));
-    printf ("%6d: ENTRA  HEROI %2d BASE %d (%2d/%2d) SAI %d\n", t, h, b, p, lMax, temp);
+    printf ("%6d: ENTRA  HEROI %2d BASE %d (%2d/%2d) SAI %d\n", t, h, b, c, lMax, temp);
 }
 
 void heroiSai (struct mundo *simulacao, struct evento_t *eventoTemp, struct lef_t *e)
@@ -316,7 +316,7 @@ void missao (struct mundo *simulacao, struct evento_t *eventoTemp, struct lef_t 
             h[i] = hId;
             i++;
         }
-        printf ("%6d: MISSAO %d HAB BASE %d:", t, eventoTemp->dado1, menorPos);
+        printf ("%6d: MISSAO %d HAB BASE %d: ", t, eventoTemp->dado1, menorPos);
         imprime_cjt (habilidadesBase);
         achou = contido_cjt (simulacao->missoes[mId].habilidades, habilidadesBase);
         
@@ -349,12 +349,12 @@ void fimSimulacao (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e
     int i;
     struct heroi h;
 
-    printf ("%6d: FIM", s->relogio);
+    printf ("%6d: FIM\n", s->relogio);
 
     for (i = 0; i < s->nHerois; i++)
     {
         h = s->herois[i];
-        printf ("HEROI %2d PAC %3d VEL %4d EXP %4d HABS", i, h.paciencia, h.velocidade, h.experiencia);
+        printf ("HEROI %2d PAC %3d VEL %4d EXP %4d HABS ", i, h.paciencia, h.velocidade, h.experiencia);
         imprime_cjt (h.habilidades);
         h.habilidades = destroi_cjt (h.habilidades);
     }
@@ -365,7 +365,6 @@ void fimSimulacao (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e
 
     for (i = 0; i < s->nBases; i++)
     {
-        printf ("BASE %2d eh %2d\n", i, cardinalidade_cjt(s->bases[i].presentes));
         s->bases[i].presentes = destroi_cjt (s->bases[i].presentes);
         fila_destroi (&s->bases[i].filaEspera);
     }
