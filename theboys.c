@@ -179,7 +179,7 @@ void heroiChega (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e)
 
     s->herois[h].base = b;
 
-    printf ("%6d: CHEGA  HEROI %2d BASE %d (%2d/%2d) ", s->relogio, h, b, p, lMax);
+    printf ("%6d: CHEGA  HEROI %2d BASE %d (%2d/%2d) ", s->relogio, h, b, c, lMax);
     if ((c < lMax && fila_vazia (f)) || p > 10 * fila_tamanho (f))
     {
         printf ("ESPERA\n");
@@ -280,7 +280,7 @@ void heroiViaja (struct mundo *simulacao, struct evento_t *eventoTemp, struct le
 
     insere_lef (e, cria_evento (temp, 1, h, baseDestino));
     printf ("%6d: VIAJA  HEROI %2d BASE %d BASE %d ", simulacao->relogio, h, baseAtual, baseDestino);
-    printf ("DIST %d VEL %d CHEGA %d\n", dist, vel, simulacao->relogio + temp);
+    printf ("DIST %d VEL %d CHEGA %d\n", dist, vel, temp);
 }
 
 void missao (struct mundo *simulacao, struct evento_t *eventoTemp, struct lef_t *e)
@@ -361,10 +361,11 @@ void fimSimulacao (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e
 
     printf ("%d/%d MISSOES CUMPRIDAS ", s->nMissoesResolvidas, s->nMissoes);
     printf ("(%.2f%%), MEDIA ", (float)(100*s->nMissoesResolvidas / s->nMissoes));
-    printf ("%.2f TENTATIVAS/MISSAO", (float)(s->nMissoesAgendadas / s->nMissoes));
+    printf ("%.2f TENTATIVAS/MISSAO\n", (float)(s->nMissoesAgendadas / s->nMissoes));
 
     for (i = 0; i < s->nBases; i++)
     {
+        printf ("BASE %2d eh %2d\n", i, cardinalidade_cjt(s->bases[i].presentes));
         s->bases[i].presentes = destroi_cjt (s->bases[i].presentes);
         fila_destroi (&s->bases[i].filaEspera);
     }
