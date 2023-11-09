@@ -256,12 +256,16 @@ void heroiSai (struct mundo *simulacao, struct evento_t *eventoTemp, struct lef_
     int ltcMax = simulacao->bases[b].lotacaoMax;
     int presentes;
 
+    printf ("%6d: ANTES: ", t);
+    imprime_cjt (simulacao->bases[b].presentes);
     retira_cjt (simulacao->bases[b].presentes, h);
     presentes = cardinalidade_cjt (simulacao->bases[b].presentes);
 
     insere_lef (e, cria_evento (t, 8, h, aleat (0, simulacao->nBases - 1)));
     insere_lef (e, cria_evento (t, 5, 0, b));
     printf ("%6d: SAI    HEROI %2d BASE %d (%2d/%2d)\n", t, h, b, presentes, ltcMax);
+    printf ("%6d: DEPOIS: ", t);
+    imprime_cjt (simulacao->bases[b].presentes);
 }
 
 void heroiViaja (struct mundo *simulacao, struct evento_t *eventoTemp, struct lef_t *e)
@@ -290,7 +294,7 @@ void missao (struct mundo *simulacao, struct evento_t *eventoTemp, struct lef_t 
     int dists[simulacao->nBases], h[simulacao->nHerois];
     struct coordenadas m = simulacao->missoes[mId].local;
     int i, j, menorPos, hId, XTemp, YTemp, achou; 
-    struct conjunto *temp, *habilidadesBase = cria_cjt (N_HABILIDADES);
+    struct conjunto *temp, *habilidadesBase;
 
     printf ("%6d: MISSAO %d HAB REQ: ", t, eventoTemp->dado1);
     imprime_cjt (simulacao->missoes[mId].habilidades);
@@ -305,11 +309,13 @@ void missao (struct mundo *simulacao, struct evento_t *eventoTemp, struct lef_t 
     achou = j = i = 0;
     while (!achou && j < simulacao->nBases)
     {
+        habilidadesBase = cria_cjt (N_HABILIDADES);
         menorPos = achaMenorPosVet (dists, simulacao->nBases);
         dists[menorPos] = MAIOR_DIST;
         inicia_iterador_cjt (simulacao->bases[menorPos].presentes);
         while (incrementa_iterador_cjt (simulacao->bases[menorPos].presentes, &hId))
         {
+            printf("HEROI PRESENT  %d\n", hId);
             temp = habilidadesBase;
             habilidadesBase = uniao_cjt (habilidadesBase, simulacao->herois[hId].habilidades);
             destroi_cjt (temp);
@@ -319,7 +325,8 @@ void missao (struct mundo *simulacao, struct evento_t *eventoTemp, struct lef_t 
         printf ("%6d: MISSAO %d HAB BASE %d: ", t, eventoTemp->dado1, menorPos);
         imprime_cjt (habilidadesBase);
         achou = contido_cjt (simulacao->missoes[mId].habilidades, habilidadesBase);
-        
+        destroi_cjt (habilidadesBase);
+
         j++;
     }
 
@@ -340,8 +347,6 @@ void missao (struct mundo *simulacao, struct evento_t *eventoTemp, struct lef_t 
             ++simulacao->nMissoesAgendadas;
         }
     }
-
-    destroi_cjt (habilidadesBase);
 }
 
 void fimSimulacao (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e)
