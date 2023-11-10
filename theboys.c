@@ -69,9 +69,16 @@ struct mundo
     struct missao missoes[T_FIM_DO_MUNDO / 100];
 };
 
+/* inicio funcoes auxiliares */
+
 int aleat (int min, int max)
 {
-    return min + rand() % (max - min + 1); 
+    return min + rand() % (max - min + 1);
+}
+
+int calculaDist (struct coordenadas a, struct coordenadas b)
+{
+    return (int)sqrt ((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
 }
 
 int achaMenorPosVet (int vet[], int tam)
@@ -99,6 +106,8 @@ int ajustaY (struct mundo *s, struct base *b, int num)
 
     return verifica;
 }
+
+/* fim funcoes auxiliares */
 
 struct heroi criaHeroi (int id)
 {
@@ -256,96 +265,84 @@ void heroiSai (struct mundo *simulacao, struct evento_t *eventoTemp, struct lef_
     int ltcMax = simulacao->bases[b].lotacaoMax;
     int presentes;
 
-    printf ("%6d: ANTES: ", t);
-    imprime_cjt (simulacao->bases[b].presentes);
     retira_cjt (simulacao->bases[b].presentes, h);
     presentes = cardinalidade_cjt (simulacao->bases[b].presentes);
 
     insere_lef (e, cria_evento (t, 8, h, aleat (0, simulacao->nBases - 1)));
     insere_lef (e, cria_evento (t, 5, 0, b));
     printf ("%6d: SAI    HEROI %2d BASE %d (%2d/%2d)\n", t, h, b, presentes, ltcMax);
-    printf ("%6d: DEPOIS: ", t);
-    imprime_cjt (simulacao->bases[b].presentes);
 }
 
-void heroiViaja (struct mundo *simulacao, struct evento_t *eventoTemp, struct lef_t *e)
+void heroiViaja (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e)
 {
-    int h = eventoTemp->dado1;
-    int baseDestino = eventoTemp->dado2;
-    int baseAtual = simulacao->herois[h].base;
-    struct coordenadas bDest = simulacao->bases[baseDestino].local;
-    struct coordenadas bAtual = simulacao->bases[baseAtual].local;
-    int vel = simulacao->herois[h].velocidade;
-    int dist, temp;
+    int h = eventoTemp->dado1, t;
+    struct coordenadas bDest = s->bases[eventoTemp->dado2].local;
+    struct coordenadas bAtual = s->bases[s->herois[h].base].local;
+    int vel = s->herois[h].velocidade;
 
-    vel = simulacao->herois[h].velocidade;
-    dist = (int)sqrt ((bDest.x - bAtual.x) * (bDest.x - bAtual.x) + (bDest.y - bAtual.y) * (bDest.y - bAtual.y));
-    temp = simulacao->relogio + dist / vel;
+    vel = s->herois[h].velocidade;
+    t = s->relogio + calculaDist (bAtual, bDest) / vel;
 
-    insere_lef (e, cria_evento (temp, 1, h, baseDestino));
-    printf ("%6d: VIAJA  HEROI %2d BASE %d BASE %d ", simulacao->relogio, h, baseAtual, baseDestino);
-    printf ("DIST %d VEL %d CHEGA %d\n", dist, vel, temp);
+    insere_lef (e, cria_evento (t, 1, h, eventoTemp->dado2));
+    printf ("%6d: VIAJA  HEROI %2d ", s->relogio, h);
+    printf ("BASE %d BASE %d ", s->herois[h].base, eventoTemp->dado2);
+    printf ("DIST %d VEL %d CHEGA %d\n", calculaDist (bAtual, bDest), vel, t);
 }
 
-void missao (struct mundo *simulacao, struct evento_t *eventoTemp, struct lef_t *e)
+void missao (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e)
 {
-    int t = simulacao->relogio;
+    int t = s->relogio;
     int mId = eventoTemp->dado1;
-    int dists[simulacao->nBases], h[simulacao->nHerois];
-    struct coordenadas m = simulacao->missoes[mId].local;
-    int i, j, menorPos, hId, XTemp, YTemp, achou; 
-    struct conjunto *temp, *habilidadesBase;
+    int dists[s->nBases];
+    int j, menorPos, hId, achou; 
+    struct conjunto *aux, *habilidadesB;
 
-    printf ("%6d: MISSAO %d HAB REQ: ", t, eventoTemp->dado1);
-    imprime_cjt (simulacao->missoes[mId].habilidades);
+    printf ("%6d: MISSAO %d HAB REQ: ", s->relogio, mId);
+    imprime_cjt (s->missoes[mId].habilidades);
 
-    for (i = 0; i < simulacao->nBases; i++)
+    for (j = 0; j < s->nBases; j++)
+        dists[j] = calculaDist (s->bases[j].local, s->missoes[mId].local);
+
+    achou = j = 0;
+    while (!achou && j < s->nBases)
     {
-        XTemp = simulacao->bases[i].local.x;
-        YTemp = simulacao->bases[i].local.y;
-        dists[i] = (int)sqrt ((m.x - XTemp) * (m.x - XTemp) + (m.y - YTemp) * (m.y - YTemp));
-    }
-
-    achou = j = i = 0;
-    while (!achou && j < simulacao->nBases)
-    {
-        habilidadesBase = cria_cjt (N_HABILIDADES);
-        menorPos = achaMenorPosVet (dists, simulacao->nBases);
+        habilidadesB = cria_cjt (N_HABILIDADES);
+        menorPos = achaMenorPosVet (dists, s->nBases);
         dists[menorPos] = MAIOR_DIST;
-        inicia_iterador_cjt (simulacao->bases[menorPos].presentes);
-        while (incrementa_iterador_cjt (simulacao->bases[menorPos].presentes, &hId))
-        {
-            printf("HEROI PRESENT  %d\n", hId);
-            temp = habilidadesBase;
-            habilidadesBase = uniao_cjt (habilidadesBase, simulacao->herois[hId].habilidades);
-            destroi_cjt (temp);
-            h[i] = hId;
-            i++;
-        }
-        printf ("%6d: MISSAO %d HAB BASE %d: ", t, eventoTemp->dado1, menorPos);
-        imprime_cjt (habilidadesBase);
-        achou = contido_cjt (simulacao->missoes[mId].habilidades, habilidadesBase);
-        destroi_cjt (habilidadesBase);
 
+        inicia_iterador_cjt (s->bases[menorPos].presentes);
+        while (incrementa_iterador_cjt (s->bases[menorPos].presentes, &hId))
+        {
+            aux = habilidadesB;
+            habilidadesB = uniao_cjt (habilidadesB, s->herois[hId].habilidades);
+            destroi_cjt (aux);
+        }
+
+        printf ("%6d: MISSAO %d HAB BASE %d: ", t, mId, menorPos);
+        imprime_cjt (habilidadesB);
+        achou = contido_cjt (s->missoes[mId].habilidades, habilidadesB);
+        destroi_cjt (habilidadesB);
         j++;
     }
 
     if (achou)
     {
-        printf ("%6d: MISSAO %d CUMPRIDA BASE %d HEROIS: ", t, eventoTemp->dado1, menorPos);
-        imprime_cjt (simulacao->bases[menorPos].presentes);
-        ++simulacao->nMissoesResolvidas;
-        for (i = 0; i < cardinalidade_cjt(simulacao->bases[menorPos].presentes); i++)
-            ++simulacao->herois[h[i]].experiencia;
+        printf ("%6d: MISSAO %d CUMPRIDA BASE %d HEROIS: ", t, mId, menorPos);
+        imprime_cjt (s->bases[menorPos].presentes);
+
+        inicia_iterador_cjt (s->bases[menorPos].presentes);
+        while (incrementa_iterador_cjt (s->bases[menorPos].presentes, &hId))
+            ++s->herois[hId].experiencia;
+
+        ++s->nMissoesResolvidas;
+        return;
     }
-    else
+    
+    printf ("%6d: MISSAO %d IMPOSSIVEL\n", t, mId);
+    if (t + 1440 < T_FIM_DO_MUNDO)
     {
-        printf ("%6d: MISSAO %d IMPOSSIVEL\n", t, eventoTemp->dado1);
-        if (t + 1440 < T_FIM_DO_MUNDO)
-        {
-            insere_lef (e, cria_evento (t + 1440, 2, eventoTemp->dado1, 0));
-            ++simulacao->nMissoesAgendadas;
-        }
+        insere_lef (e, cria_evento (t + 1440, 2, mId, 0));
+        ++s->nMissoesAgendadas;
     }
 }
 
@@ -386,6 +383,17 @@ int main ()
     struct evento_t *eventoTemp;
     struct lef_t *eventos;
     struct mundo simulacao;
+    void (*vetFuncoes[])(struct mundo *, struct evento_t *, struct lef_t *) = 
+    {
+        &heroiChega, 
+        &missao, 
+        &heroiEspera, 
+        &heroiDesiste, 
+        &avisaPorteiro, 
+        &heroiEntra, 
+        &heroiSai, 
+        &heroiViaja,
+    };
 
     srand (0); 
 
@@ -397,35 +405,7 @@ int main ()
     {
         while (eventoTemp->tempo == simulacao.relogio)
         {
-            switch (eventoTemp->tipo)
-            {
-                case 1:
-                    heroiChega (&simulacao, eventoTemp, eventos);
-                    break;
-                case 2:
-                    missao (&simulacao, eventoTemp, eventos);
-                    break;
-                case 3:
-                    heroiEspera (&simulacao, eventoTemp, eventos);
-                    break;
-                case 4:
-                    heroiDesiste (&simulacao, eventoTemp, eventos);
-                    break;
-                case 5:
-                    avisaPorteiro (&simulacao, eventoTemp, eventos);
-                    break;
-                case 6:
-                    heroiEntra (&simulacao, eventoTemp, eventos);
-                    break;
-                case 7:
-                    heroiSai (&simulacao, eventoTemp, eventos);
-                    break;
-                case 8:
-                    heroiViaja (&simulacao, eventoTemp, eventos);
-                    break;
-                default:
-                    break;
-            }
+            (*vetFuncoes[eventoTemp->tipo - 1])(&simulacao, eventoTemp, eventos);
             destroi_evento (eventoTemp);
             eventoTemp = retira_lef (eventos);
         }
