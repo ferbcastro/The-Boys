@@ -98,8 +98,8 @@ struct evento_t *retira_lef (struct lef_t *l)
     struct evento_t *auxE;
     struct nodo_lef_t *ptrAux;
 
-    /* retorna NULL se a lef nao foi criada */
-    if (!l)
+    /* retorna NULL se a lef esta vazia */
+    if (vazia_lef (l))
         return NULL;
     
     auxE = l->primeiro->evento;

@@ -103,6 +103,12 @@ void fila_imprime (struct fila *fila)
 {
     struct nodo *ptrAux;
 
+    if (fila_vazia (fila))
+    {
+        printf ("[ ]\n");
+        return;
+    }
+
     printf ("[ ");
     ptrAux = fila->ini;
     while (ptrAux)
