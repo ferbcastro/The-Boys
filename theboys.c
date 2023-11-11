@@ -339,11 +339,9 @@ void missao (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e)
     }
     
     printf ("%6d: MISSAO %d IMPOSSIVEL\n", t, mId);
+    insere_lef (e, cria_evento (t + 1440, 2, mId, 0));
     if (t + 1440 < T_FIM_DO_MUNDO)
-    {
-        insere_lef (e, cria_evento (t + 1440, 2, mId, 0));
         ++s->nMissoesAgendadas;
-    }
 }
 
 void fimSimulacao (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e)
