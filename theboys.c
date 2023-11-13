@@ -2,7 +2,7 @@
 * Projeto 'The Boys' 
 * Disciplina CI1001 - Programacao I
 * Autor: Fernando de Barros Castro
-* Data: 11/11/2023
+* Data: 12/11/2023
 */
 
 #include <stdio.h>
@@ -196,6 +196,10 @@ void inicializaMundo (struct mundo *s, struct lef_t *eventos)
     s->tamanhoMundo.x = s->tamanhoMundo.y = N_TAMANHO_MUNDO;
     s->nMissoesResolvidas = s->relogio = T_INICIO;
 
+    /* insere na lef no tempo T_FIM_DO_MUNDO 
+     * o evento que termina a simulacao */
+    insere_lef (eventos, cria_evento (T_FIM_DO_MUNDO, 9, 0, 0));
+
     for (i = 0; i < s->nBases; i++)
         s->bases[i] = criaBase (i, s);
 
@@ -215,10 +219,6 @@ void inicializaMundo (struct mundo *s, struct lef_t *eventos)
         s->missoes[i] = criaMissao (i);
         insere_lef (eventos, cria_evento (aleat (T_INICIO, T_FIM_DO_MUNDO), 2, i, 0));
     }
-
-    /* insere na lef no tempo T_FIM_DO_MUNDO 
-     * o evento que termina a simulacao */
-    insere_lef (eventos, cria_evento (T_FIM_DO_MUNDO, 9, 0, 0));
 }
 
 void heroiChega (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e)
@@ -268,7 +268,7 @@ void heroiDesiste (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e
     int b = eventoTemp->dado2;
 
     /* uma base qualquer eh sorteada como novo destino do heroi */
-    printf ("%6d: DESISTE HEROI %2d BASE %d\n", t, h, b);
+    printf ("%6d: DESIST HEROI %2d BASE %d\n", t, h, b);
     insere_lef (e, cria_evento (t, 8, h, aleat (0, s->nBases - 1)));
 }
 
