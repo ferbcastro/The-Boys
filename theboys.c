@@ -366,10 +366,10 @@ void missao (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e)
     achou = j = 0;
     while (!achou && j < s->nBases)
     {
-        /* apos achar a base 'i' mais perto, ela eh descartada 
-         * como possibilidade para a proxima iteracao */
         habilidadesB = cria_cjt (s->nHabilidades);
         menorPos = achaMenorPosVet (dists, s->nBases);
+        /* apos achar a base 'i' mais perto, ela eh descartada 
+         * como possibilidade para a proxima iteracao */
         dists[menorPos] = MAIOR_DIST;
 
         /* as diferentes habilidades dos herois da base 
