@@ -2,7 +2,7 @@
 * Projeto 'The Boys' 
 * Disciplina CI1001 - Programacao I
 * Autor: Fernando de Barros Castro
-* Data: 12/11/2023
+* Data: 14/11/2023
 */
 
 #include <stdio.h>
@@ -110,6 +110,7 @@ int calculaDist (struct coordenadas a, struct coordenadas b)
     return (int)sqrt ((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
 }
 
+/* retorna a posicao do menor elemento de vet */
 int achaMenorPosVet (int vet[], int tam)
 {
     int i, menorPos;
@@ -410,7 +411,7 @@ void missao (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e)
     ++s->missoes[mId].nAgendamentos;
 }
 
-void fimSimulacao (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e)
+void fimSimulacao (struct mundo *s, struct evento_t **eventoTemp, struct lef_t **e)
 {
     int i, somaAgendamentos = 0;
 
@@ -435,10 +436,11 @@ void fimSimulacao (struct mundo *s, struct evento_t *eventoTemp, struct lef_t *e
     for (i = 0; i < s->nMissoes; i++)
         s->missoes[i].habilidades = destroi_cjt (s->missoes[i].habilidades);
 
-    destroi_evento (eventoTemp);
-    destroi_lef (e);
+    /* aterrando os ponteiros de eventoTemp e eventos */
+    *eventoTemp = destroi_evento (*eventoTemp);
+    *e = destroi_lef (*e);
 
-    /* abaixo sao impressas as estatisticas da simulacao */
+    /* abaixo as estatisticas da simulacao sao impressas */
     printf ("%d/%d MISSOES CUMPRIDAS ", s->nMissoesResolvidas, s->nMissoes);
     printf ("(%.2f%%), MEDIA ", (float)(100*s->nMissoesResolvidas / s->nMissoes));
     /* loop soma todos os agendamentos que levaram a missoes cumpridas */
@@ -471,9 +473,9 @@ int main ()
     eventos = cria_lef ();
     inicializaMundo (&simulacao, eventos);
 
-    /* retira primeiro evento da lef verificando 
-     * se houve falha na alocacao dessa */
-    if (!(eventoTemp = retira_lef (eventos)))
+    /* verifica falha na alocacao da lef */
+    eventoTemp = retira_lef (eventos);
+    if (!eventoTemp)
     {
         printf ("FALHA NA ALOCACAO DA LEF\n");
         return -1;
@@ -484,7 +486,7 @@ int main ()
         while (eventoTemp->tempo == simulacao.relogio)
         {
             /* verifica se o tipo do evento eh valido */
-            if (eventoTemp->tipo < 1 || eventoTemp->tipo > 9)
+            if (eventoTemp->tipo < 1 || eventoTemp->tipo > 8)
             {
                 printf ("EVENTO INVALIDO\n");
                 return -1;
@@ -493,7 +495,8 @@ int main ()
             (*vetFuncoes[eventoTemp->tipo - 1])(&simulacao, eventoTemp, eventos);
             destroi_evento (eventoTemp);
 
-            if (!(eventoTemp = retira_lef (eventos)))
+            eventoTemp = retira_lef (eventos);
+            if (!eventoTemp)
             {
                 printf ("FALHA NA ALOCACAO DA LEF\n");
                 return -1;
@@ -503,7 +506,7 @@ int main ()
         ++simulacao.relogio;
     }
 
-    fimSimulacao (&simulacao, eventoTemp, eventos);
+    fimSimulacao (&simulacao, &eventoTemp, &eventos);
 
     return 0;
 }
